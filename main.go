@@ -16,5 +16,7 @@ func main() {
 	router := gin.Default()
 	router.GET("/list", route.GetTodo)
 	router.POST("/list", route.AddTodo)
+	router.GET("/list/:id", route.GetTodobyId)
+	router.GET("/val/:deleteId", route.DeleteaTodobyId)
 	router.Run("localhost:8080")
 }

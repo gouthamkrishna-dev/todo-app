@@ -2,11 +2,27 @@ package route
 
 import (
 	"application/todo/common"
+	"sort"
 
 	"application/todo/tododatabase"
 
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
+
+func priorityValue(p string) int {
+	switch p {
+	case "high":
+		return 3
+	case "medium":
+		return 2
+	case "low":
+		return 1
+	default:
+		return 0
+	}
+}
 
 func GetTodo(c *gin.Context) {
 	var Alltodo []common.Newtodo
@@ -30,7 +46,11 @@ func GetTodo(c *gin.Context) {
 	if err := rows.Err(); err != nil {
 		c.JSON(400, gin.H{"Error4": err})
 	}
-	c.JSON(200, gin.H{"Message": "succesfully found", "data": Alltodo})
+
+	sort.Slice(Alltodo, func(i, j int) bool {
+		return priorityValue(Alltodo[i].Priority) > priorityValue(Alltodo[j].Priority)
+	})
+	c.IndentedJSON(200, gin.H{"Message": "succesfully found", "data": Alltodo})
 }
 
 func AddTodo(c *gin.Context) {
@@ -50,7 +70,7 @@ VALUES(?, ?, ?, ?)`, todo.Title, todo.Description, "pending", todo.Priority)
 			c.JSON(400, gin.H{"Error5": err})
 			return
 		}
-		c.JSON(200, gin.H{"List": todo})
+		c.IndentedJSON(200, gin.H{"Message": "Successfully created", "data": todo})
 		return
 	}
 	_, err := tododatabase.DB.Exec(`INSERT INTO todo(title, description, status, priority)
@@ -59,5 +79,46 @@ VALUES(?, ?, ?, ?)`, todo.Title, "", "pending", todo.Priority)
 		c.JSON(400, gin.H{"Error5": err})
 		return
 	}
-	c.JSON(200, gin.H{"Message": "Successfully created", "data": todo})
+	c.IndentedJSON(200, gin.H{"Message": "Successfully created", "data": todo})
+}
+
+func GetTodobyId(c *gin.Context) {
+	data := c.Param("id")
+	val, err := strconv.Atoi(data)
+
+	if err != nil {
+		c.JSON(400, gin.H{"Error6": err})
+		return
+	}
+	var GetTodobyId common.Newtodo
+	err = tododatabase.DB.QueryRow("SELECT * FROM todo WHERE id = ?", val).Scan(&GetTodobyId.ID, &GetTodobyId.Title, &GetTodobyId.Description, &GetTodobyId.Status, &GetTodobyId.Priority, &GetTodobyId.CreatedAt)
+	if err != nil {
+		c.JSON(400, gin.H{"Error7": err})
+		return
+	}
+	c.IndentedJSON(200, gin.H{"Message": "Successfully retrived by Id", "data": GetTodobyId})
+}
+
+func DeleteaTodobyId(c *gin.Context) {
+	data := c.Param("deleteId")
+	val, err := strconv.Atoi(data)
+
+	if err != nil {
+		c.JSON(400, gin.H{"Error6": err})
+		return
+	}
+	result, err := tododatabase.DB.Exec(`DELETE FROM todo WHERE id = ?`, val)
+
+	if err != nil {
+		c.JSON(400, gin.H{"Error7": err})
+		return
+	}
+	rowsaffected, err := result.RowsAffected()
+	if err != nil {
+		c.JSON(400, gin.H{"Error7": err})
+		return
+	}
+
+	c.IndentedJSON(200, gin.H{"Message:": "successfully deleted by Id", "data": rowsaffected})
+
 }
