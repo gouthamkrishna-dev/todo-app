@@ -18,5 +18,6 @@ func main() {
 	router.POST("/list", route.AddTodo)
 	router.GET("/list/:id", route.GetTodobyId)
 	router.GET("/val/:deleteId", route.DeleteaTodobyId)
+	router.POST("/list/update", route.UpdateTodoby)
 	router.Run("localhost:8080")
 }
